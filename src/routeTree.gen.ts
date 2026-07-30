@@ -9,38 +9,23 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SuperuserRouteImport } from './routes/superuser'
-import { Route as ManagerRouteImport } from './routes/manager'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as DirectorRouteImport } from './routes/director'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as DirectorRouteImport } from './routes/director'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ManagerRouteImport } from './routes/manager'
+import { Route as SuperuserRouteImport } from './routes/superuser'
 import { Route as SuperuserIndexRouteImport } from './routes/superuser.index'
-import { Route as SuperuserHotelDetailsRouteImport } from './routes/superuser.hotel-details'
-import { Route as SuperuserHistoryRouteImport } from './routes/superuser.history'
-import { Route as SuperuserGuestsRouteImport } from './routes/superuser.guests'
-import { Route as SuperuserBookingsHistoryRouteImport } from './routes/superuser.bookings-history'
 import { Route as SuperuserAdminsRouteImport } from './routes/superuser.admins'
+import { Route as SuperuserBookingsHistoryRouteImport } from './routes/superuser.bookings-history'
+import { Route as SuperuserGuestsRouteImport } from './routes/superuser.guests'
+import { Route as SuperuserHistoryRouteImport } from './routes/superuser.history'
+import { Route as SuperuserHotelDetailsRouteImport } from './routes/superuser.hotel-details'
 import { Route as BookingsIdDeleteRouteImport } from './routes/bookings.$id.delete'
 
-const SuperuserRoute = SuperuserRouteImport.update({
-  id: '/superuser',
-  path: '/superuser',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ManagerRoute = ManagerRouteImport.update({
-  id: '/manager',
-  path: '/manager',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DirectorRoute = DirectorRouteImport.update({
-  id: '/director',
-  path: '/director',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -48,9 +33,24 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const DirectorRoute = DirectorRouteImport.update({
+  id: '/director',
+  path: '/director',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManagerRoute = ManagerRouteImport.update({
+  id: '/manager',
+  path: '/manager',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuperuserRoute = SuperuserRouteImport.update({
+  id: '/superuser',
+  path: '/superuser',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SuperuserIndexRoute = SuperuserIndexRouteImport.update({
@@ -58,19 +58,9 @@ const SuperuserIndexRoute = SuperuserIndexRouteImport.update({
   path: '/',
   getParentRoute: () => SuperuserRoute,
 } as any)
-const SuperuserHotelDetailsRoute = SuperuserHotelDetailsRouteImport.update({
-  id: '/hotel-details',
-  path: '/hotel-details',
-  getParentRoute: () => SuperuserRoute,
-} as any)
-const SuperuserHistoryRoute = SuperuserHistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => SuperuserRoute,
-} as any)
-const SuperuserGuestsRoute = SuperuserGuestsRouteImport.update({
-  id: '/guests',
-  path: '/guests',
+const SuperuserAdminsRoute = SuperuserAdminsRouteImport.update({
+  id: '/admins',
+  path: '/admins',
   getParentRoute: () => SuperuserRoute,
 } as any)
 const SuperuserBookingsHistoryRoute =
@@ -79,9 +69,19 @@ const SuperuserBookingsHistoryRoute =
     path: '/bookings-history',
     getParentRoute: () => SuperuserRoute,
   } as any)
-const SuperuserAdminsRoute = SuperuserAdminsRouteImport.update({
-  id: '/admins',
-  path: '/admins',
+const SuperuserGuestsRoute = SuperuserGuestsRouteImport.update({
+  id: '/guests',
+  path: '/guests',
+  getParentRoute: () => SuperuserRoute,
+} as any)
+const SuperuserHistoryRoute = SuperuserHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => SuperuserRoute,
+} as any)
+const SuperuserHotelDetailsRoute = SuperuserHotelDetailsRouteImport.update({
+  id: '/hotel-details',
+  path: '/hotel-details',
   getParentRoute: () => SuperuserRoute,
 } as any)
 const BookingsIdDeleteRoute = BookingsIdDeleteRouteImport.update({
@@ -194,32 +194,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/superuser': {
-      id: '/superuser'
-      path: '/superuser'
-      fullPath: '/superuser'
-      preLoaderRoute: typeof SuperuserRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/manager': {
-      id: '/manager'
-      path: '/manager'
-      fullPath: '/manager'
-      preLoaderRoute: typeof ManagerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/director': {
-      id: '/director'
-      path: '/director'
-      fullPath: '/director'
-      preLoaderRoute: typeof DirectorRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -229,11 +208,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/director': {
+      id: '/director'
+      path: '/director'
+      fullPath: '/director'
+      preLoaderRoute: typeof DirectorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manager': {
+      id: '/manager'
+      path: '/manager'
+      fullPath: '/manager'
+      preLoaderRoute: typeof ManagerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/superuser': {
+      id: '/superuser'
+      path: '/superuser'
+      fullPath: '/superuser'
+      preLoaderRoute: typeof SuperuserRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/superuser/': {
@@ -243,25 +243,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperuserIndexRouteImport
       parentRoute: typeof SuperuserRoute
     }
-    '/superuser/hotel-details': {
-      id: '/superuser/hotel-details'
-      path: '/hotel-details'
-      fullPath: '/superuser/hotel-details'
-      preLoaderRoute: typeof SuperuserHotelDetailsRouteImport
-      parentRoute: typeof SuperuserRoute
-    }
-    '/superuser/history': {
-      id: '/superuser/history'
-      path: '/history'
-      fullPath: '/superuser/history'
-      preLoaderRoute: typeof SuperuserHistoryRouteImport
-      parentRoute: typeof SuperuserRoute
-    }
-    '/superuser/guests': {
-      id: '/superuser/guests'
-      path: '/guests'
-      fullPath: '/superuser/guests'
-      preLoaderRoute: typeof SuperuserGuestsRouteImport
+    '/superuser/admins': {
+      id: '/superuser/admins'
+      path: '/admins'
+      fullPath: '/superuser/admins'
+      preLoaderRoute: typeof SuperuserAdminsRouteImport
       parentRoute: typeof SuperuserRoute
     }
     '/superuser/bookings-history': {
@@ -271,11 +257,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperuserBookingsHistoryRouteImport
       parentRoute: typeof SuperuserRoute
     }
-    '/superuser/admins': {
-      id: '/superuser/admins'
-      path: '/admins'
-      fullPath: '/superuser/admins'
-      preLoaderRoute: typeof SuperuserAdminsRouteImport
+    '/superuser/guests': {
+      id: '/superuser/guests'
+      path: '/guests'
+      fullPath: '/superuser/guests'
+      preLoaderRoute: typeof SuperuserGuestsRouteImport
+      parentRoute: typeof SuperuserRoute
+    }
+    '/superuser/history': {
+      id: '/superuser/history'
+      path: '/history'
+      fullPath: '/superuser/history'
+      preLoaderRoute: typeof SuperuserHistoryRouteImport
+      parentRoute: typeof SuperuserRoute
+    }
+    '/superuser/hotel-details': {
+      id: '/superuser/hotel-details'
+      path: '/hotel-details'
+      fullPath: '/superuser/hotel-details'
+      preLoaderRoute: typeof SuperuserHotelDetailsRouteImport
       parentRoute: typeof SuperuserRoute
     }
     '/bookings/$id/delete': {
@@ -322,3 +322,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

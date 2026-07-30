@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
-    }),src/integrations/supabase/client.ts
+    }),
     tailwindcss(),
     tanstackStart(),
     nitro({

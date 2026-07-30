@@ -1,0 +1,1 @@
+import{c as a}from"./createServerFn-DquzOjUd.js";import{ac as e}from"./index-3gVOgDkf.js";const f=a({method:"POST"}).handler(e("d3686433918a53a28382418faaa218ad0a1777c6c869dfe5f1ceffb7bb8a4024"));export{f as loginStaff};

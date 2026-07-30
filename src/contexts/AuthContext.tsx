@@ -7,7 +7,6 @@ import {
   useMemo,
   type ReactNode,
 } from "react";
-import { useAdmins } from "./AdminsContext";
 import { useAudit } from "./AuditContext";
 import { useAuthHistory } from "./AuthHistoryContext";
 import { computeShiftWindow } from "./ShiftContext";
@@ -28,7 +27,7 @@ interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   ready: boolean;
-login: (username: string, password: string) => Promise<{ ok: true; role: UserRole } | { ok: false; error: string }>;
+  login: (username: string, password: string) => Promise<{ ok: true; role: UserRole } | { ok: false; error: string }>;
   switchRole: (role: UserRole) => void;
   logout: () => void;
   history: LoginEvent[];
@@ -40,7 +39,6 @@ const STORAGE_KEY = "hotel_auth_user";
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { findByUsername } = useAdmins();
   const { log } = useAudit();
   const { history, pushHistory, clearHistory, flushHistory } = useAuthHistory();
 
@@ -52,10 +50,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const raw = sessionStorage.getItem(STORAGE_KEY);
       const parsed = raw ? (JSON.parse(raw) as AuthUser) : null;
-      // If this was an admin session and its shift boundary has already
-      // passed (e.g. the tab was asleep or the machine was off through the
-      // 06:00/18:00 cutoff), don't silently resurrect it — treat it as
-      // logged out and record the closing event.
       if (parsed && parsed.role === "admin" && parsed.loginAt) {
         const shiftEnd = computeShiftWindow(new Date(parsed.loginAt)).end;
         if (new Date().getTime() >= shiftEnd.getTime()) {
@@ -91,7 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           : null,
       );
-      // Clean up any legacy persisted session from localStorage.
       try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
     } catch {
       setUser(null);
@@ -110,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Auto-logout record when the browser tab/window is closed
   useEffect(() => {
     if (typeof window === "undefined") return;
-const handler = () => {
+    const handler = () => {
       if (!user) return;
       try {
         pushHistory({
@@ -131,43 +124,34 @@ const handler = () => {
       window.removeEventListener("pagehide", handler);
       window.removeEventListener("beforeunload", handler);
     };
-}, [user, pushHistory, flushHistory]);
+  }, [user, pushHistory, flushHistory]);
 
   const login: AuthContextValue["login"] = useCallback(
-    (username, password) => {
-      const u = username.trim().toLowerCase();
+    async (username, password) => {
+      const { loginStaff } = await import("@/lib/api/auth.functions");
+      const result = await loginStaff({ data: { username, password } });
+      if (!result.ok) return { ok: false, error: result.error };
 
-
-      // 2) Built-in master credentials.
-      const entry = CREDENTIALS[u];
-      if (!entry || entry.password !== password) {
-        return { ok: false, error: "Invalid username or password" };
-      }
       const at = new Date().toISOString();
       const next: AuthUser = {
-        username: u,
-        role: entry.role,
-        displayName: u,
-        canSwitchWorkspaces: entry.role === "superuser",
+        username: result.username,
+        role: result.role,
+        displayName: result.username,
+        canSwitchWorkspaces: result.role === "superuser",
         loginAt: at,
       };
+      sessionStorage.setItem("hotel_session_token", result.token);
       setUser(next);
-      pushHistory({
-        username: u,
-        role: entry.role,
-        action: "login",
-        at,
-        displayName: u,
-      });
+      pushHistory({ username: result.username, role: result.role, action: "login", at });
       log({
-        actor: { username: u, role: entry.role },
+        actor: { username: result.username, role: result.role },
         category: "auth",
         action: "auth.login",
-        summary: `${u} signed in`,
+        summary: `${result.username} signed in`,
       });
-      return { ok: true, role: entry.role };
+      return { ok: true, role: result.role };
     },
-    [findByUsername, log, pushHistory],
+    [pushHistory, log],
   );
 
   const logout = useCallback(() => {
@@ -188,6 +172,7 @@ const handler = () => {
         summary: `${user.displayName ?? user.username} signed out`,
       });
     }
+    sessionStorage.removeItem("hotel_session_token");
     setUser(null);
   }, [user, log, pushHistory]);
 
