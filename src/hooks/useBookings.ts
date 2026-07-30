@@ -1,9 +1,11 @@
 import { useCallback, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Booking, generateSampleBookings } from '@/types/hotel';
 import { differenceInCalendarDays, parseISO, startOfDay } from 'date-fns';
 import { toast } from 'sonner';
 import { useI18n } from './useI18n';
-import { useSharedState } from '@/lib/hotel-sync';
+import { listBookings, saveBookings } from '@/lib/api/bookings.functions';
+import { getToken } from '@/lib/session-token';
 
 function bookingSignature(b: Booking): string {
   return [b.roomNumber, b.bedIndex ?? 'room', b.checkIn, b.checkOut, b.status, (b.guestName || '').trim().toLowerCase()].join('|');
@@ -52,26 +54,49 @@ function findConflict(list: Booking[], candidate: Booking) { return list.find((b
 
 function applyAutoCheckout(list: Booking[]): Booking[] {
   // Auto-checkout is intentionally disabled.
-  // When the scheduled check-out date/time has passed but the admin has not
-  // checked the guest out, the booking must stay "in-house" so it surfaces as
-  // a critical "missed check-out" alert (red border + notification) instead of
-  // being automatically checked out or extended.
   return list;
 }
 
-
 export function useBookings() {
   const { t } = useI18n();
-  const { data, setData, ready } = useSharedState<Booking[]>('bookings', []);
+  const qc = useQueryClient();
 
-  // Seed sample bookings into the shared row once, when DB is empty
+  // ---- replaces: const { data, setData, ready } = useSharedState<Booking[]>('bookings', []); ----
+  const { data: rawData, isSuccess: ready } = useQuery({
+    queryKey: ['bookings'],
+    queryFn: () => listBookings({ data: { token: getToken() } }),
+    refetchInterval: 4000,
+  });
+  const data: Booking[] = Array.isArray(rawData) ? rawData : [];
+
+  const { mutateAsync: persist } = useMutation({
+    mutationFn: (next: Booking[]) => saveBookings({ data: { token: getToken(), bookings: next } }),
+    onMutate: async (next) => {
+      await qc.cancelQueries({ queryKey: ['bookings'] });
+      qc.setQueryData(['bookings'], next); // optimistic UI update
+    },
+    onError: () => {
+      toast.error('Failed to save — retrying next sync');
+      qc.invalidateQueries({ queryKey: ['bookings'] }); // roll back to server truth
+    },
+  });
+
+  // setData supports both a value and an updater fn, exactly like the old useSharedState API
+  const setData = useCallback((updater: Booking[] | ((prev: Booking[]) => Booking[])) => {
+    const next = typeof updater === 'function' ? (updater as (p: Booking[]) => Booking[])(data) : updater;
+    void persist(next);
+  }, [data, persist]);
+  // ---- end replacement ----
+
+  // Seed sample bookings into the DB once, when it's empty
   useEffect(() => {
     if (!ready) return;
     if (Array.isArray(data) && data.length === 0) {
       const seed = normalizeBookings(generateSampleBookings());
       if (seed.length) setData(seed);
     }
-  }, [ready, data, setData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready]);
 
   // Daily auto-checkout
   useEffect(() => {
@@ -84,31 +109,26 @@ export function useBookings() {
 
   const addBooking = useCallback((booking: Booking) => {
     let rejected = false;
-    setData((prev) => {
-      const list = Array.isArray(prev) ? prev : [];
-      if (findConflict(list, booking)) { rejected = true; toast.error(t('overlapError')); return list; }
-      return [...list, booking];
-    });
+    const list = Array.isArray(data) ? data : [];
+    if (findConflict(list, booking)) { rejected = true; toast.error(t('overlapError')); return false; }
+    setData([...list, booking]);
     return !rejected;
-  }, [setData, t]);
+  }, [data, setData, t]);
 
   const removeBooking = useCallback((id: string) => {
     setData((prev) => (Array.isArray(prev) ? prev.filter((b) => b.id !== id) : []));
   }, [setData]);
 
-
   const updateBooking = useCallback((id: string, updates: Partial<Booking>) => {
     let rejected = false;
-    setData((prev) => {
-      const list = Array.isArray(prev) ? prev : [];
-      const target = list.find((b) => b.id === id);
-      if (!target) return list;
-      const candidate: Booking = { ...target, ...updates };
-      if (findConflict(list, candidate)) { rejected = true; toast.error(t('overlapError')); return list; }
-      return list.map((b) => (b.id === id ? candidate : b));
-    });
+    const list = Array.isArray(data) ? data : [];
+    const target = list.find((b) => b.id === id);
+    if (!target) return false;
+    const candidate: Booking = { ...target, ...updates };
+    if (findConflict(list, candidate)) { rejected = true; toast.error(t('overlapError')); return false; }
+    setData(list.map((b) => (b.id === id ? candidate : b)));
     return !rejected;
-  }, [setData, t]);
+  }, [data, setData, t]);
 
   return { bookings, addBooking, removeBooking, updateBooking };
 }

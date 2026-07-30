@@ -1,60 +1,30 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getHotelDetails, setHotelDetails } from '@/lib/api/hotel-details.functions';
+import { getToken } from '@/lib/session-token';
 
 export interface HotelDetails {
-  logo: string;          // data URL or empty
-  hotelName: string;
-  companyName: string;
-  inn: string;
-  raschetnyiSchet: string;
-  telephone: string;
-  site: string;
-  email: string;
+  logo: string; hotelName: string; companyName: string; inn: string;
+  raschetnyiSchet: string; telephone: string; site: string; email: string;
 }
+const DEFAULTS: HotelDetails = { logo: '', hotelName: '', companyName: '', inn: '', raschetnyiSchet: '', telephone: '', site: '', email: '' };
 
-const DEFAULTS: HotelDetails = {
-  logo: '',
-  hotelName: '',
-  companyName: '',
-  inn: '',
-  raschetnyiSchet: '',
-  telephone: '',
-  site: '',
-  email: '',
-};
-
-const STORAGE_KEY = 'hotel:details:v1';
-
-interface Ctx {
-  details: HotelDetails;
-  setDetails: (patch: Partial<HotelDetails>) => void;
-  reset: () => void;
-}
-
+interface Ctx { details: HotelDetails; setDetails: (patch: Partial<HotelDetails>) => void; }
 const HotelDetailsContext = createContext<Ctx | null>(null);
 
 export function HotelDetailsProvider({ children }: { children: ReactNode }) {
-  const [details, setState] = useState<HotelDetails>(DEFAULTS);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) setState({ ...DEFAULTS, ...JSON.parse(raw) });
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(details)); } catch { /* ignore */ }
-  }, [details]);
-
-  const setDetails = useCallback((patch: Partial<HotelDetails>) => {
-    setState((prev) => ({ ...prev, ...patch }));
-  }, []);
-
-  const reset = useCallback(() => setState(DEFAULTS), []);
-
-  const value = useMemo(() => ({ details, setDetails, reset }), [details, setDetails, reset]);
+  const qc = useQueryClient();
+  const { data: details = DEFAULTS } = useQuery({
+    queryKey: ['hotel-details'],
+    queryFn: () => getHotelDetails({ data: { token: getToken() } }),
+    refetchInterval: 15000,
+  });
+  const { mutate: persist } = useMutation({
+    mutationFn: (next: HotelDetails) => setHotelDetails({ data: { token: getToken(), details: next } }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['hotel-details'] }),
+  });
+  const setDetails = (patch: Partial<HotelDetails>) => persist({ ...details, ...patch });
+  const value = useMemo(() => ({ details, setDetails }), [details]);
   return <HotelDetailsContext.Provider value={value}>{children}</HotelDetailsContext.Provider>;
 }
 
