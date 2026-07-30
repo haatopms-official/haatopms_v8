@@ -138,35 +138,6 @@ const handler = () => {
       const u = username.trim().toLowerCase();
 
 
-      // 1) Try a registered admin first.
-const login: AuthContextValue["login"] = useCallback(
-  async (username, password) => {
-    const { loginStaff } = await import("@/lib/api/auth.functions");
-    const result = await loginStaff({ data: { username, password } });
-    if (!result.ok) return { ok: false, error: result.error };
-
-    const at = new Date().toISOString();
-    const next: AuthUser = {
-      username: result.username,
-      role: result.role,
-      displayName: result.username,
-      canSwitchWorkspaces: result.role === "superuser",
-      loginAt: at,
-    };
-    sessionStorage.setItem("hotel_session_token", result.token);
-    setUser(next);
-    pushHistory({ username: result.username, role: result.role, action: "login", at });
-    log({
-      actor: { username: result.username, role: result.role },
-      category: "auth",
-      action: "auth.login",
-      summary: `${result.username} signed in`,
-    });
-    return { ok: true, role: result.role };
-  },
-  [pushHistory, log],
-);
-
       // 2) Built-in master credentials.
       const entry = CREDENTIALS[u];
       if (!entry || entry.password !== password) {
