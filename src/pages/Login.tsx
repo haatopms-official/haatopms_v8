@@ -30,14 +30,14 @@ export default function Login() {
     setStatus("success");
     setTimeout(() => navigate({ to: ROLE_HOME[role], replace: true }), 550);
   };
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setStatus("loading");
-    setTimeout(() => {
-      const result = login(username, password);
-      if (result.ok === true) {
+  
+const handleSubmit = (e: FormEvent) => {
+  e.preventDefault();
+  setError(null);
+  setStatus("loading");
+  setTimeout(async () => {
+    const result = await login(username, password);
+    if (result.ok === true) {
         finishLogin(result.role);
         return;
       }

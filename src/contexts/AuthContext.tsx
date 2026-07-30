@@ -28,7 +28,7 @@ interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   ready: boolean;
-  login: (username: string, password: string) => { ok: true; role: UserRole } | { ok: false; error: string };
+login: (username: string, password: string) => Promise<{ ok: true; role: UserRole } | { ok: false; error: string }>;
   switchRole: (role: UserRole) => void;
   logout: () => void;
   history: LoginEvent[];
@@ -150,12 +150,18 @@ const login: AuthContextValue["login"] = useCallback(
       username: result.username,
       role: result.role,
       displayName: result.username,
+      canSwitchWorkspaces: result.role === "superuser",
       loginAt: at,
     };
     sessionStorage.setItem("hotel_session_token", result.token);
     setUser(next);
     pushHistory({ username: result.username, role: result.role, action: "login", at });
-    log({ actor: { username: result.username, role: result.role }, category: "auth", action: "auth.login", summary: `${result.username} signed in` });
+    log({
+      actor: { username: result.username, role: result.role },
+      category: "auth",
+      action: "auth.login",
+      summary: `${result.username} signed in`,
+    });
     return { ok: true, role: result.role };
   },
   [pushHistory, log],
