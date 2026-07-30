@@ -37,13 +37,6 @@ interface AuthContextValue {
 
 const STORAGE_KEY = "hotel_auth_user";
 
-const CREDENTIALS: Record<string, { password: string; role: UserRole }> = {
-  superuser: { password: "SaexatTestSuperuserpanel001", role: "superuser" },
-  director: { password: "SaexatTestDirectorpanel002", role: "director" },
-  admin: { password: "SaexatTestAdminpanel003", role: "admin" },
-  manager: { password: "SaexatTestManagerpanel004", role: "manager" },
-};
-
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -146,33 +139,27 @@ const handler = () => {
 
 
       // 1) Try a registered admin first.
-      const admin = findByUsername(u);
-      if (admin && admin.password === password) {
-        const at = new Date().toISOString();
-        const next: AuthUser = {
-          username: admin.username,
-          role: "admin",
-          adminId: admin.id,
-          displayName: `${admin.name} ${admin.surname}`.trim(),
-          loginAt: at,
-        };
-        setUser(next);
-        pushHistory({
-          username: next.username,
-          role: "admin",
-          action: "login",
-          at,
-          adminId: admin.id,
-          displayName: next.displayName,
-        });
-        log({
-          actor: { username: next.username, role: "admin", adminId: admin.id },
-          category: "auth",
-          action: "auth.login",
-          summary: `${next.displayName} signed in`,
-        });
-        return { ok: true, role: "admin" };
-      }
+const login: AuthContextValue["login"] = useCallback(
+  async (username, password) => {
+    const { loginStaff } = await import("@/lib/api/auth.functions");
+    const result = await loginStaff({ data: { username, password } });
+    if (!result.ok) return { ok: false, error: result.error };
+
+    const at = new Date().toISOString();
+    const next: AuthUser = {
+      username: result.username,
+      role: result.role,
+      displayName: result.username,
+      loginAt: at,
+    };
+    sessionStorage.setItem("hotel_session_token", result.token);
+    setUser(next);
+    pushHistory({ username: result.username, role: result.role, action: "login", at });
+    log({ actor: { username: result.username, role: result.role }, category: "auth", action: "auth.login", summary: `${result.username} signed in` });
+    return { ok: true, role: result.role };
+  },
+  [pushHistory, log],
+);
 
       // 2) Built-in master credentials.
       const entry = CREDENTIALS[u];
